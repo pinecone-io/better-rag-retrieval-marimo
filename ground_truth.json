@@ -1,0 +1,91 @@
+{
+  "q1_brood_parasites": {
+    "query": "birds that trick other species into raising their chicks",
+    "teaser": "different words, same idea",
+    "intended_technique": "text_semantic",
+    "fails_with": ["text_fts_body"],
+    "why_hard": "The articles never say 'trick' or 'raising their chicks' — they say 'brood parasite' and 'lays its eggs in the nests of other birds'. Keyword search needs the literal words and finds nothing; dense semantic matches the meaning and surfaces the brood parasites (cowbirds, cuckoos).",
+    "required_doc_ids": ["Common_cuckoo", "Brown-headed_cowbird", "Bronzed_cowbird"],
+    "minimum_doc_recall": 1,
+    "required_spans": [
+      {"doc_id": "*", "field": "body",
+       "match_pattern": "brood parasit|lays its eggs in the nests|host species"}
+    ]
+  },
+
+  "q2_mormon_crickets": {
+    "query": "what bird eats Mormon crickets",
+    "teaser": "exact rare term",
+    "intended_technique": "text_fts_body",
+    "fails_with": ["text_semantic", "visual"],
+    "why_hard": "'Mormon crickets' is a rare exact phrase that appears in just one article. Keyword search pinpoints it — the California gull, famous for devouring a plague of them — while dense semantic drifts to generic insect-eating birds and misses the gull entirely.",
+    "required_doc_ids": ["California_gull"],
+    "minimum_doc_recall": 1,
+    "required_spans": [
+      {"doc_id": "California_gull", "field": "body",
+       "text": "Mormon crickets"}
+    ]
+  },
+
+  "q3_pink_wading_bird": {
+    "query": "tall pink wading bird with long curved neck",
+    "teaser": "looks, not words",
+    "intended_technique": "visual",
+    "fails_with": ["text_fts_body"],
+    "why_hard": "Articles rarely state 'pink' directly — the colour comes from the diet description elsewhere. Image cross-modal scores the appearance directly against stored bird photos.",
+    "required_doc_ids": ["American_flamingo"],
+    "required_spans": [
+      {"doc_id": "American_flamingo", "field": "body",
+       "match_pattern": "pink|flamingo|wading"}
+    ]
+  },
+
+  "q4_flamingo_pink_color": {
+    "query": {
+      "filter_terms": ["flamingo"],
+      "semantic": "What gives flamingos their pink color?"
+    },
+    "user_query": "what gives flamingos their pink color?",
+    "teaser": "known bird, buried answer",
+    "intended_technique": "search_within",
+    "fails_with": ["text_fts_body", "visual"],
+    "why_hard": "Coarse-to-fine. Plain BM25 returns the flamingo article but offers no way to drill into the relevant passage (the diet section explaining the colour). Dense visual finds pink birds but can't read prose. Two-stage retrieval — FTS gate + dense-text refine inside the candidate set — surfaces the passage that actually answers the question.",
+    "required_doc_ids": ["American_flamingo"],
+    "required_spans": [
+      {"doc_id": "American_flamingo", "field": "body",
+       "match_pattern": "diet|crustacean|algae|carotenoid|pigment|brine shrimp"}
+    ]
+  },
+
+  "q5_redwinged_blackbird_hybrid": {
+    "query": {
+      "filter_terms": ["swoop", "illinois"],
+      "visual": "black bird with bright spots on wings"
+    },
+    "user_query": "a black bird with bright spots that swoops people in Illinois",
+    "teaser": "looks + hard constraints",
+    "intended_technique": "filter_visual",
+    "fails_with": ["text_fts_body", "visual"],
+    "why_hard": "Visual-only lands on yellow-shouldered / tricolored blackbirds; text-only ignores appearance. Hybrid combines a hard $match_all text gate ('swoop' + 'illinois' must appear in body) with image-dense rerank to find the right bird.",
+    "required_doc_ids": ["Red-winged_blackbird"],
+    "required_spans": [
+      {"doc_id": "Red-winged_blackbird", "field": "body",
+       "match_pattern": "swoop"}
+    ]
+  },
+
+  "q6_cardinal_eastern_feeders": {
+    "query": "Bright red songbird with a crest that visits backyard feeders in the eastern United States",
+    "teaser": "many clues at once",
+    "intended_technique": "agentic",
+    "fails_with": ["visual"],
+    "why_hard": "Three different facets — appearance (red + crested songbird), behavior (visits backyard feeders), region (eastern US). A single technique can only chase one facet at a time. The agent reads the whole question, routes each facet to the right tool, derives the arguments, and merges — so you don't have to decide the retrieval strategy up front.",
+    "required_doc_ids": ["Northern_cardinal"],
+    "required_spans": [
+      {"doc_id": "Northern_cardinal", "field": "body",
+       "match_pattern": "feeder|backyard|seed|sunflower"},
+      {"doc_id": "Northern_cardinal", "field": "body",
+       "match_pattern": "eastern|North America|United States|red"}
+    ]
+  }
+}
