@@ -216,3 +216,10 @@ internal-instructions.md
 .playwright-mcp/
 CLAUDE.md
 example-preprod-nb.ipynb
+# --- Non-demo / local-only (added for the public repo) ---
+.DS_Store
+.claude/
+.agents/
+skills-lock.json
+lecture-deck/
+example-presentation/
