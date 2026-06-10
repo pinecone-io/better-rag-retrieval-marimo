@@ -246,8 +246,8 @@ def _(GT, mo):
 
 @app.cell(hide_code=True)
 def _(doc_recall_at_k, mo, passes, pretty_name, recall_at_k, thumb):
-    # Display helpers for the technique sections: a pretty result list and a
-    # pass/fail score badge.
+    # Display helpers for the technique sections: a pretty result list (with an
+    # expandable full-text dropdown per hit) and a pass/fail score badge.
     import re
 
     def highlight(text, patterns):
@@ -259,12 +259,20 @@ def _(doc_recall_at_k, mo, passes, pretty_name, recall_at_k, thumb):
                 pass
         return out
 
-    def snippet_for(match, gt, max_chars=320):
-        body = (match.get("body") or "").replace("\n", " ")
-        patterns = [
+    def _patterns(gt):
+        return [
             s["match_pattern"] if "match_pattern" in s else re.escape(s["text"])
             for s in gt.get("required_spans", [])
         ]
+
+    def _clean(text):
+        """Flatten text into one tidy paragraph: drop '---' chunk joins, collapse space."""
+        text = re.sub(r"\s*-{3,}\s*", " ", text or "")
+        return re.sub(r"\s+", " ", text).strip()
+
+    def snippet_for(match, gt, max_chars=320):
+        body = _clean(match.get("body") or "")
+        patterns = _patterns(gt)
         idx = None
         for pat in patterns:
             try:
@@ -281,21 +289,38 @@ def _(doc_recall_at_k, mo, passes, pretty_name, recall_at_k, thumb):
             chunk = ("…" if start else "") + body[start:start + max_chars]
         return highlight(chunk + ("…" if len(body) > len(chunk) else ""), patterns)
 
+    def _full_html(match, gt):
+        """The complete retrieved text, paragraph-formatted, with the spans highlighted."""
+        raw = re.sub(r"\s*-{3,}\s*", "\n\n", match.get("body") or "")  # chunk joins -> para breaks
+        paras = [p.strip() for p in raw.split("\n\n") if p.strip()]
+        pats = _patterns(gt)
+        return "".join(
+            f"<p style='margin:0 0 0.6em;'>{highlight(p, pats)}</p>" for p in paras
+        ) or "<p>(no text)</p>"
+
     def show_results(matches, gt, k=5):
-        rows = [
-            mo.hstack(
-                [
-                    thumb(m._id, width=110),
-                    mo.md(
-                        f"**{i}. {pretty_name(m._id)}** · score `{m._score:.3f}`\n\n"
-                        f"<div style='font-size:0.85em;color:#555;'>{snippet_for(m, gt)}</div>"
-                    ),
-                ],
-                align="start", gap=1.0, widths=[1, 4],
+        rows = []
+        for i, m in enumerate(matches[:k], 1):
+            head = mo.md(
+                f"**{i}. {pretty_name(m._id)}** · score `{m._score:.3f}`\n\n"
+                "<div style='font-size:0.95em;color:#1c1917;line-height:1.6;"
+                "border-left:3px solid #e7e5e4;padding-left:0.75em;'>"
+                f"{snippet_for(m, gt)}</div>"
             )
-            for i, m in enumerate(matches[:k], 1)
-        ]
-        return mo.vstack(rows or [mo.md("_(no matches)_")], gap=0.5)
+            full = mo.accordion({
+                "Show full text": mo.md(
+                    "<div style='font-size:0.9em;color:#1c1917;line-height:1.6;"
+                    "max-height:340px;overflow-y:auto;border-left:3px solid #e7e5e4;"
+                    f"padding-left:0.75em;'>{_full_html(m, gt)}</div>"
+                )
+            })
+            rows.append(
+                mo.hstack(
+                    [thumb(m._id, width=110), mo.vstack([head, full], gap=0.35)],
+                    align="start", gap=1.0, widths=[1, 4],
+                )
+            )
+        return mo.vstack(rows or [mo.md("_(no matches)_")], gap=0.9)
 
     def score_badge(gt, matches, k=5):
         d, s, p = doc_recall_at_k(gt, matches, k), recall_at_k(gt, matches, k), passes(gt, matches, k)
