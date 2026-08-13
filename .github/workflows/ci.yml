@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Compile & lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Byte-compile Python
+        run: python -m compileall -q *.py
+
+      - name: Lint (ruff, error-level)
+        run: uvx ruff check --select E9,F63,F7,F82 .
+
+  audit:
+    name: Dependency audit (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run pip-audit
+        run: |
+          uv export --format requirements-txt --no-emit-project > requirements-audit.txt
+          uvx pip-audit -r requirements-audit.txt
