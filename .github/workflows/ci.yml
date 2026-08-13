@@ -33,7 +33,6 @@ jobs:
   audit:
     name: Dependency audit (advisory)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +42,7 @@ jobs:
           python-version: "3.12"
 
       - name: Run pip-audit
+        continue-on-error: true
         run: |
           uv export --format requirements-txt --no-emit-project > requirements-audit.txt
           uvx pip-audit -r requirements-audit.txt
