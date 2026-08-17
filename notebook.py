@@ -738,7 +738,7 @@ def _():
     import anthropic
     import json
 
-    AGENT_MODEL = "claude-sonnet-4-5"
+    AGENT_MODEL = "claude-sonnet-5"
 
     AGENT_TOOLS = """\
     You route bird-search questions across these five retrieval tools. Break the
@@ -768,7 +768,6 @@ def _():
         resp = client.messages.create(
             model=AGENT_MODEL,
             max_tokens=4096,           # shared with thinking on newer models
-            temperature=0.0,           # nudges toward a stable plan (not a guarantee)
             system=AGENT_TOOLS,
             messages=[{"role": "user", "content": question}],
         )
