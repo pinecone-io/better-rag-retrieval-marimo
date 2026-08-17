@@ -27,7 +27,7 @@ import anthropic
 
 
 # Same Claude family the agentic router uses; override via env if needed.
-GEN_MODEL = os.environ.get("GEN_MODEL", "claude-sonnet-4-5")
+GEN_MODEL = os.environ.get("GEN_MODEL", "claude-sonnet-5")
 
 
 SYSTEM_PROMPT = """\
@@ -108,7 +108,7 @@ def generate(
             try:
                 with client.messages.stream(
                     model=GEN_MODEL,
-                    max_tokens=512,
+                    max_tokens=4096,
                     system=SYSTEM_PROMPT,
                     messages=[{"role": "user", "content": user}],
                 ) as s:
@@ -121,7 +121,7 @@ def generate(
     t0 = time.perf_counter()
     resp = client.messages.create(
         model=GEN_MODEL,
-        max_tokens=512,
+        max_tokens=4096,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user}],
     )
