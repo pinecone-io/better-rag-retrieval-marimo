@@ -857,7 +857,13 @@ def _(
             for m, s in zip(matches, raw):
                 scores[m._id] = scores.get(m._id, 0.0) + (s - lo) / span
                 counts[m._id] = counts.get(m._id, 0) + 1
-                reps[m._id] = m
+                # Keep the richest body for each bird. The FTS tools return the whole
+                # article; the chunk tools return only their top chunks. Taking
+                # whichever step ran last would let a chunk tool truncate the text
+                # that the score badge and the RAG context both read.
+                prev = reps.get(m._id)
+                if prev is None or len(m.get("body") or "") > len(prev.get("body") or ""):
+                    reps[m._id] = m
 
         # 3. Rank, wrap in BirdMatch so the merged score is what shows.
         ranked = sorted(scores, key=lambda i: (scores[i], counts[i]), reverse=True)
