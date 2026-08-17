@@ -738,7 +738,7 @@ def _():
     import anthropic
     import json
 
-    AGENT_MODEL = "claude-sonnet-4-5"
+    AGENT_MODEL = "claude-sonnet-5"
 
     AGENT_TOOLS = """\
     You route bird-search questions across these five retrieval tools. Break the
@@ -767,12 +767,15 @@ def _():
         client = anthropic.Anthropic()
         resp = client.messages.create(
             model=AGENT_MODEL,
-            max_tokens=1024,
-            temperature=0.0,           # reproducible plan for the demo
+            max_tokens=4096,           # shared with thinking on newer models
             system=AGENT_TOOLS,
             messages=[{"role": "user", "content": question}],
         )
-        text = resp.content[0].text.strip()
+        # Pull the text blocks out by type. Newer Claude models think before they
+        # answer, so the first block may be a thinking block rather than the JSON.
+        text = "".join(
+            b.text for b in resp.content if getattr(b, "type", None) == "text"
+        ).strip()
         if text.startswith("```"):     # strip ```json fences if present
             text = text.removeprefix("```json").removeprefix("```").rsplit("```", 1)[0].strip()
         return json.loads(text)["steps"]
