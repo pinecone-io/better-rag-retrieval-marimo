@@ -9,7 +9,7 @@ technique and grading each one against a small hand-built eval set.
 
 import marimo
 
-__generated_with = "0.23.8"
+__generated_with = "0.23.16"
 app = marimo.App(
     width="medium",
     app_title="Bird Search — Pinecone Teaching Demo",
